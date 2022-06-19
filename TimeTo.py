@@ -18,7 +18,7 @@ class TimeTo():
         self.secInHour = 60
         '''Amount days in Months'''
         self.daysInJanuary = 31                         #1
-        self.daysInFebruary = self.check_leapYear() #2
+        self.daysInFebruary = self.check_leapYear()     #2
         self.daysInMarch = 31                           #3
         self.daysInApril = 30                           #4
         self.daysInMay = 31                             #5
