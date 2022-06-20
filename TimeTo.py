@@ -1,15 +1,17 @@
 import datetime
 from datetime import datetime as dt
 import json
+from flask import Flask
+from flask import abort
 
 class TimeTo():
     def __init__(self, year, month, day, hour, min_):
         '''Values we get from user'''
-        self.year = year
-        self.month = month
-        self.day = day
-        self.hour = hour 
-        self.min = min_ 
+        self.year = int(year)
+        self.month = int(month)
+        self.day = int(day)
+        self.hour = int(hour)
+        self.min = int(min_) 
         self.sec = 0
         '''Const'''
         self.daysInYear = 365
@@ -18,7 +20,7 @@ class TimeTo():
         self.secInHour = 60
         '''Amount days in Months'''
         self.daysInJanuary = 31                         #1
-        self.daysInFebruary = self.check_leapYear()     #2
+        self.daysInFebruary = self.check_leapYear() #2
         self.daysInMarch = 31                           #3
         self.daysInApril = 30                           #4
         self.daysInMay = 31                             #5
@@ -52,7 +54,7 @@ class TimeTo():
         'seconds'   : self.count_seconds()
         }]
         to_json = json.dumps(time_to)
-        print(to_json)
+        return to_json
 
     def count_days(self):
         now = dt.now()
@@ -60,6 +62,7 @@ class TimeTo():
         now_year = nowTupple[0]
         now_month = nowTupple[1]
         now_day = nowTupple[2]
+        now_hour = nowTupple[3]
         #Days to event#
         daysToEvent = 0 
         if now_month < self.month: 
@@ -107,8 +110,12 @@ class TimeTo():
             daysToEvent = self.day - now_day
             
         daysToEvent = daysToEvent + self.count_years()
+        self.daysToEvent = daysToEvent
+        if daysToEvent == 1 and now_hour >= self.hour:
+            daysToEvent -= 1
 
-        return daysToEvent
+
+        return str(daysToEvent)
 
     def check_leapYear(self):
         leap_years = []
@@ -188,16 +195,23 @@ class TimeTo():
             pass
         else:
             hoursToEvent = self.hour - int(now_hour)
-        if self.count_days() == 1:
+        if self.daysToEvent == 1:
             hoursToEvent -= 1
-            if hoursToEvent < 0:
+            if hoursToEvent < 0 and int(self.hour) != int(now_hour):
                 hoursToEvent += 24
-        return hoursToEvent
+            elif hoursToEvent < 0 and int(self.hour) == int(now_hour):
+                hoursToEvent = 0
+                if self.daysToEvent == 1:
+                    hoursToEvent = 23
+        elif self.daysToEvent == 0:
+            hoursToEvent -=1
+        return str(hoursToEvent)
 
     def count_mins(self):
         #MINUTES#
         now = dt.now()
         nowTupple = now.timetuple()
+        now_hour = nowTupple[3]
         now_min = str(nowTupple[4])
         minsToEvent = 0
         if str(now_min) == '00' or str(now_min) == '0':
@@ -213,11 +227,14 @@ class TimeTo():
             minsToEvent -= 60
             if str(minsToEvent)[0] == '-':
                 minsToEvent += 60
+        if self.daysToEvent == 1:
+            if int(self.hour) == int(now_hour):
+                minsToEvent = 0
 
         if len(str(minsToEvent)) == 1:
             minsToEvent = '0' + str(minsToEvent)
 
-        return minsToEvent 
+        return str(minsToEvent)
 
     def count_seconds(self):
         now = dt.now()
@@ -241,4 +258,15 @@ class TimeTo():
 
         if len(str(secToEvent)) == 1:
             secToEvent = '0' + str(secToEvent)
-        return(secToEvent)
+
+        return str(secToEvent)
+
+app = Flask(__name__)
+
+@app.route('/api/time-to/<year>/<month>/<day>/<hour>/<minute>')
+def getTimeToEvent(year, month, day, hour, minute):
+    api = TimeTo(year, month, day, hour, minute)
+    return api.count()
+
+if __name__ == '__main__':
+    app.run(host = '0.0.0.0', debug=False)
